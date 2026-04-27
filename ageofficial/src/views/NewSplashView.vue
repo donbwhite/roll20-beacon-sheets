@@ -1,7 +1,7 @@
 <template>
     <div class="age-splash-screen">
         <h1>Select your game's ruleset</h1>
-        <div class="age-splash-rulesets">
+        <div class="age-splash-rulesets" v-if="!selectedSystem">
             <button class="age-ruleset-btn" aria-label="Fantasy AGE Ruleset" @click="selectSystem('fage2e');$emit('close')">
                 <img src="/src/assets/logos/fantasyage.png" alt="Fantasy AGE" role="presentation">
             </button>
@@ -11,24 +11,46 @@
             <button class="age-ruleset-btn" aria-label="Blue Rose AGE Ruleset" @click="selectSystem('blue rose');$emit('close')">
                 <img src="/src/assets/logos/bluerose.png" alt="Blue Rose AGE" role="presentation">
             </button>
-            <button class="age-ruleset-btn" aria-label="Expanse AGE Ruleset" @click="selectSystem('expanse');$emit('close')">
+            <button class="age-ruleset-btn" aria-label="Expanse AGE Ruleset" @click="selectSystem('expanse')">
                 <img src="/src/assets/logos/expansewhite.png" alt="Expanse AGE" role="presentation">
+            </button>
+        </div>
+        <div v-else class="age-character-type-select">
+            <button class="age-character-type-btn"  aria-label="Character" @click="selectExpanseCharType('Character');$emit('close')">
+                <img :src="'/src/assets/icons/sensuousness.svg'" />
+                <span>Character</span>
+            </button>
+            <button class="age-character-type-btn" aria-label="Ship" @click="selectExpanseCharType('Ship');$emit('close')">
+                <img :src="'/src/assets/icons/starfighter.svg'" />
+                <span>Ship</span>
             </button>
         </div>
         <h6>*This can be changed later in your sheet settings</h6>  
     </div>
 </template>
 <script setup>
+import { useBioStore } from '@/sheet/stores/bio/bioStore';
 import { useSettingsStore } from '@/sheet/stores/settings/settingsStore';
 import { productLineStyle } from '@/utility/productLineStyle';
+import { ref } from 'vue';
 
 const settings = useSettingsStore();
+const bio = useBioStore();
+const selectedSystem = ref('');
 
 const selectSystem = (system) => {
-    settings.gameSystem = system;
-    if(system === 'expanse'){
-        settings.useFortune = true;
+    if(system !== 'expanse'){
+        settings.gameSystem = system;
     }
+    if(system === 'expanse'){
+        selectedSystem.value = system;
+    }
+}
+
+const selectExpanseCharType = (type) => {
+    settings.useFortune = true;
+    settings.gameSystem = 'expanse';
+    bio.type = type;
 }
 </script>
 <style scoped lang="scss">
@@ -78,6 +100,33 @@ const selectSystem = (system) => {
             & img {                
                 filter: grayscale(0%);
             }
+        }
+    }
+}
+.age-character-type-select {
+    display: flex;
+    gap: 25px;
+    justify-content: center;
+    & .age-character-type-btn {
+        background: none;
+        border: 2px solid #FFF;
+        color: #FFF;
+        padding: 15px;
+        font-size: 1.2rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+        width: 150px;
+        border-radius: 10px;
+        font-family: 'Venus Rising', sans-serif;
+        cursor: pointer;
+        & img {
+            width: 100px;
+            filter: invert(100%);
+        }
+        &:hover {
+            background-color: rgba(255,255,255,0.1);
         }
     }
 }
