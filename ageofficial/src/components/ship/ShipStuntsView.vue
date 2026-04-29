@@ -139,7 +139,7 @@ const ROLES = [
     { key: 'pilot',     name: 'Pilot'     },
     { key: 'engineer',  name: 'Engineer'  },
     { key: 'gunner',    name: 'Gunner'    },
-    { key: 'sensor',    name: 'Sensor'    },
+    { key: 'sensors',   name: 'Sensors'   },
 ];
 
 const emptyStunt = (role = 'commander') => ({ _id: '', role, sp: 1, name: '', description: '' });

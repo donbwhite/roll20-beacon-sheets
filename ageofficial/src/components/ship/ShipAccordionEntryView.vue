@@ -10,8 +10,8 @@
             <div class="age-ship-weapon-range">{{ weapon.range }}</div>
             <div style="display:grid;align-items:center;height:100%;">
                 <button type="button" class="config-btn age-icon-btn" @click="onRollDamage"
-                    :disabled="!weapon.damage"
-                    v-tippy="{ content: weapon.damage ? 'Roll ' + weapon.name + ' damage (' + weapon.damage + ')' : 'No damage formula set' }">
+                    :disabled="!weapon.damage || weapon.offline || props.systemOffline"
+                    v-tippy="{ content: props.systemOffline ? 'System Offline' : weapon.offline ? 'Weapon Offline' : weapon.damage ? 'Roll ' + weapon.name + ' damage (' + weapon.damage + ')' : 'No damage formula set' }">
                     <font-awesome-icon :icon="['fa', 'dice']" />
                 </button>
             </div>
@@ -68,7 +68,7 @@ defineEmits(['edit']);
 
 async function onRollDamage() {
     const w = props.weapon;
-    if (!w.damage) return;
+    if (!w.damage || w.offline || props.systemOffline) return;
     const match = w.damage.match(/^(\d+)d(\d+)$/i);
     if (!match) return;
     const count = parseInt(match[1]);

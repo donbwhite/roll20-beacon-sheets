@@ -40,7 +40,7 @@ export type ShipHydrate = {
     weapons?: Record<string, ShipWeapon>;
     crew?: Record<string, CrewHydrate>;
     qualityFlaws?: Record<string, QualityFlawHydrate>;
-    shipStunts?: { commander: number; pilot: number; engineer: number; gunner: number; sensor: number; };
+    shipStunts?: { commander: number; pilot: number; engineer: number; gunner: number; sensors: number; };
     stuntDefs?: Record<string, ShipStuntDef>;
     losses?: ShipLosses;
     seriousLosses?: ShipSeriousLosses;
@@ -71,7 +71,7 @@ export type QualityFlawHydrate = {
 
 export type ShipStuntDef = {
     _id: string;
-    role: 'commander' | 'pilot' | 'engineer' | 'gunner' | 'sensor';
+    role: 'commander' | 'pilot' | 'engineer' | 'gunner' | 'sensors';
     sp: number;
     name: string;
     description: string;
@@ -97,7 +97,7 @@ export const useShipStore = defineStore('ship', () => {
     const qualityFlaws = ref<QualityFlawHydrate[]>([]);
     const stuntDefs = ref<ShipStuntDef[]>([]);
     const weapons = ref<ShipWeapon[]>([]);
-    const shipStunts = ref<{ commander: number; pilot: number; engineer: number; gunner: number; sensor: number; }>({ commander: 0, pilot: 0, engineer: 0, gunner: 0, sensor: 0 });
+    const shipStunts = ref<{ commander: number; pilot: number; engineer: number; gunner: number; sensors: number; }>({ commander: 0, pilot: 0, engineer: 0, gunner: 0, sensors: 0 });
     const pdcFiredThisRound = ref<boolean>(false);
 
     const losses = ref<ShipLosses>({
@@ -230,7 +230,6 @@ export const useShipStore = defineStore('ship', () => {
                 { label: 'Sensors (Current)', value: sensorsCurrent.value },
             ],
         });
-        pdcFiredThisRound.value = true;
     };
 
     // Damage Control: 3d6 + Intelligence (Engineering focus) vs TN 11
@@ -384,7 +383,7 @@ export const useShipStore = defineStore('ship', () => {
         weapons.value = weapons.value.filter((m) => m._id !== memberId);
     };
 
-    const resetShipStunts = (stuntType: 'commander' | 'pilot' | 'engineer' | 'gunner' | 'sensor') => {
+    const resetShipStunts = (stuntType: 'commander' | 'pilot' | 'engineer' | 'gunner' | 'sensors') => {
         shipStunts.value[stuntType] = 0;
     };
 
@@ -402,9 +401,7 @@ export const useShipStore = defineStore('ship', () => {
                 _id,
                 name,
                 primaryRole,
-                ability: arrayToObject(
-                    (ability || []).map((a: any) => ({ ...a, _id: String(a._id ?? uuidv4()) }))
-                ),
+                ability: arrayToObject(ability || []),
             }))),
             qualityFlaws: arrayToObject(qualityFlaws.value),
             stuntDefs: arrayToObject(stuntDefs.value),
@@ -438,7 +435,7 @@ export const useShipStore = defineStore('ship', () => {
         qualityFlaws.value = objectToArray(hydrateStore.qualityFlaws || {}) || [];
         stuntDefs.value = objectToArray(hydrateStore.stuntDefs || {}) || [];
         weapons.value = objectToArray(hydrateStore.weapons || {}) || [];
-        shipStunts.value = hydrateStore.shipStunts || { commander: 0, pilot: 0, engineer: 0, gunner: 0, sensor: 0 };
+        shipStunts.value = hydrateStore.shipStunts || { commander: 0, pilot: 0, engineer: 0, gunner: 0, sensors: 0 };
         losses.value = hydrateStore.losses ?? { collateral: 0, hull: 0, maneuverability: 0, sensors: 0, weaponsSystem: 0 };
         seriousLosses.value = hydrateStore.seriousLosses ?? { reactorOffline: false, railgunsOffline: false, torpedoesOffline: false, pdcsOffline: false };
         pdcFiredThisRound.value = hydrateStore.pdcFiredThisRound ?? false;

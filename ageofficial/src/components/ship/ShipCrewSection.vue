@@ -89,7 +89,7 @@
                     class="accordion-collapse age-accordion-collapse collapsed collapse">
                     <div class="accordion-body">
                         <div class="age-quality-accordion">
-                            <span v-html="stunt.description || '—'"></span>
+                            <span v-html="DOMPurify.sanitize(stunt.description || '—')"></span>
                         </div>
                     </div>
                 </div>
@@ -228,6 +228,7 @@
 import { useShipStore } from '@/sheet/stores/character/shipStore';
 import { ref, computed } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
+import DOMPurify from 'dompurify';
 import ShipModelVue from './ShipModelVue.vue';
 import VueMultiselect from 'vue-multiselect';
 import { QuillEditor } from '@vueup/vue-quill';
@@ -283,11 +284,11 @@ const openModal = (mode, option) => {
 };
 
 const openCrewEdit = (member) => {
-    crewMember.value = { ...member, ability: [...(member.ability || [])] };
+    crewMember.value = { ...member, ability: (member.ability || []).map(a => structuredClone(a)) };
     selectedModalOption.value = 'crew';
     modalMode.value = 'edit';
     crewMemberRoles.value = (member.ability || [])
-        .map(a => shipCrewRoles.find(r => r.ability === a.ability))
+        .map(a => shipCrewRoles.find(r => String(r._id) === String(a._id)))
         .filter(Boolean);
     showModal.value = true;
 };
@@ -318,7 +319,7 @@ const closeModal = () => {
 
 const updateSelected = (value) => {
     crewMember.value.ability = value.map(v => {
-        const existing = crewMember.value.ability.find(a => a.ability === v.ability);
+        const existing = crewMember.value.ability.find(a => String(a._id) === String(v._id));
         return existing ?? {
             _id: String(v._id),
             ability: v.ability,
