@@ -60,9 +60,6 @@
             </div>
             <div class="age-header-menu">
               <div class="dropdown" style="text-align: right;">
-                <!-- <button class="btn" type="button" aria-expanded="false">
-                  <font-awesome-icon style="font-size: 24px;" :icon="['fa', 'bars']" />
-                </button> -->
                 <ul class="dropdown-menu">
                   <li>
                     <button v-if="settings.whisperRollsGM === 'toggle'" :class="{ active: settings.whisperRollsGMToggle }" class="age-btn" @click="settings.whisperRollsGMToggle = !settings.whisperRollsGMToggle">

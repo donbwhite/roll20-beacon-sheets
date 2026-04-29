@@ -49,20 +49,6 @@
                 <!-- Combat Actions Card -->
                 <div class="section-card" style="margin-bottom: 15px;">
                     <h4>Actions</h4>
-
-                    <!-- Enemy Sensors + High-G inputs (hidden until roll system is wired) -->
-                    <!-- <div class="age-ship-combat-context">
-                        <div class="age-ship-context-row">
-                            <label class="age-input-label">Enemy Sensors</label>
-                            <input type="number" class="age-input age-num-input" v-model.number="enemySensorsInput" min="0" />
-                        </div>
-                        <div class="age-ship-context-row" v-if="highGAllowed">
-                            <label class="age-input-label">High-G Bonus (1–6)</label>
-                            <input type="number" class="age-input age-num-input" v-model.number="highGBonusInput" min="0" max="6" />
-                        </div>
-                        <div v-if="!highGAllowed" class="age-ship-warning">Reactor Offline — High-G unavailable</div>
-                    </div> -->
-
                     <!-- Action Buttons -->
                     <div class="age-ship-actions">
                         <button class="age-btn" @click="onElectronicWarfare">

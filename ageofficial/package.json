@@ -31,6 +31,7 @@
     "@roll20-official/beacon-sdk": "^0.0.31",
     "@vueup/vue-quill": "^1.0.0-alpha.40",
     "bootstrap": "^5.3.3",
+    "dompurify": "^3.4.1",
     "handlebars": "^4.7.7",
     "jsonpath": "^1.1.1",
     "lodash": "^4.17.21",
@@ -48,6 +49,7 @@
   "devDependencies": {
     "@rushstack/eslint-patch": "^1.2.0",
     "@testing-library/vue": "^7.0.0",
+    "@types/dompurify": "^3.2.0",
     "@types/jsdom": "^21.1.0",
     "@types/jsonpath": "^0.2.4",
     "@types/lodash": "^4.14.202",

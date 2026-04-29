@@ -48,7 +48,7 @@
                 data-bs-parent="#age-qf-accordion">
                 <div class="accordion-body">
                     <div class="age-quality-accordion">
-                        <span v-html="qf.description || '—'"></span>
+                        <span v-html="DOMPurify.sanitize(qf.description || '—')"></span>
                     </div>
                 </div>
             </div>
@@ -104,6 +104,7 @@
 <script setup>
 import { ref } from 'vue';
 import { v4 as uuidv4 } from 'uuid';
+import DOMPurify from 'dompurify';
 import ShipModelVue from './ShipModelVue.vue';
 import { useShipStore } from '@/sheet/stores/character/shipStore';
 import { QuillEditor } from '@vueup/vue-quill';
