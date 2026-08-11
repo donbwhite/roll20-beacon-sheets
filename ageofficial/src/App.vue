@@ -225,8 +225,16 @@
       class="age-import-overlay"
       @click.self="cancelImport"
     >
-      <div class="age-import-modal">
-        <h3>Import {{ importCharacterName }}</h3>
+      <div
+        ref="importModalRef"
+        class="age-import-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="age-import-title"
+        tabindex="-1"
+        @keydown="onImportKeydown"
+      >
+        <h3 id="age-import-title">Import {{ importCharacterName }}</h3>
         <p>
           Choose which sections to import, then add them to the sheet or
           overwrite the existing data.
@@ -285,7 +293,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 
 import { useAgeSheetStore } from "./sheet/stores";
 import PCView from "./views/PCView.vue";
@@ -367,9 +375,14 @@ const importCharacterName = computed(() =>
   initValues.character?.name ? `“${initValues.character.name}”` : "Character"
 );
 
+const importModalRef = ref(null);
+// The element focused before the modal opened, so focus can be restored on close.
+let importTrigger = null;
+
 const openImportModal = () => {
   // Start with every section selected.
   selectedSections.value = IMPORT_SECTIONS.map((s) => s.key);
+  importTrigger = document.activeElement;
   importModalOpen.value = true;
 };
 const confirmImport = (mode) => {
@@ -384,6 +397,47 @@ const confirmImport = (mode) => {
 const cancelImport = () => {
   importModalOpen.value = false;
 };
+
+// Selector for the focusable controls inside the modal (used for the focus trap).
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const onImportKeydown = (event) => {
+  if (event.key === "Escape") {
+    event.preventDefault();
+    cancelImport();
+    return;
+  }
+  if (event.key !== "Tab") return;
+  const modal = importModalRef.value;
+  if (!modal) return;
+  const focusable = Array.from(
+    modal.querySelectorAll(FOCUSABLE_SELECTOR)
+  ).filter((el) => el.offsetParent !== null || el === modal);
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  const active = document.activeElement;
+  // Wrap focus around the modal's edges so Tab never escapes to the page behind.
+  if (event.shiftKey && (active === first || active === modal)) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && active === last) {
+    event.preventDefault();
+    first.focus();
+  }
+};
+
+// Move focus into the modal when it opens and restore it to the trigger on close.
+watch(importModalOpen, async (open) => {
+  if (open) {
+    await nextTick();
+    importModalRef.value?.focus();
+  } else if (importTrigger && typeof importTrigger.focus === "function") {
+    importTrigger.focus();
+    importTrigger = null;
+  }
+});
 </script>
 
 <style scoped lang="scss">

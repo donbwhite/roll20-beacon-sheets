@@ -87,10 +87,16 @@
             </div>
             <div class="mb-3 col age-import-toggle-cell">
               <label class="age-checkbox-toggle age-checkbox-label">
-                <input type="checkbox" v-model="settings.allowImport" />
+                <input
+                  id="settings-allow-import"
+                  type="checkbox"
+                  v-model="settings.allowImport"
+                />
                 <span class="slider round"></span>
               </label>
-              <span class="age-toggle-label">Allow Import</span>
+              <label class="age-toggle-label" for="settings-allow-import"
+                >Allow Import</label
+              >
             </div>
           </div>
           <!-- // TODO Items unique to genre slices. Technofantasy, Cthulhu Awakens, Cyberpunk, etc. -->

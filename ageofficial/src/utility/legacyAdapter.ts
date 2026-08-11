@@ -35,6 +35,24 @@ type LegacyAttributes = Record<string, any>;
 type GroupedRepeating = Record<string, Array<Record<string, any>>>;
 
 /*
+ * All diagnostic console output in this module is gated behind `logMode` so it
+ * never runs in production (per the repo's dead-code policy). Flip to `true`
+ * during development to see the raw legacy blob and the import change report.
+ * Route every console call through these helpers rather than calling `console`
+ * directly.
+ */
+const logMode: boolean = false;
+const log = (...args: any[]) => {
+  if (logMode) console.log(...args);
+};
+const logWarn = (...args: any[]) => {
+  if (logMode) console.warn(...args);
+};
+const logInfo = (...args: any[]) => {
+  if (logMode) console.info(...args);
+};
+
+/*
  * Roll20 stores repeating rows as flat keys shaped
  *   repeating_<section>_<rowId>_<field>
  * where <section> and <field> may contain hyphens (e.g. `attack-list`,
@@ -70,7 +88,7 @@ export function groupRepeating(attributes: LegacyAttributes): GroupedRepeating {
 
 export function loadLegacyAbilityScores(attributes: LegacyAttributes) {
   if (!attributes) return;
-  console.log({
+  log({
     LegacyAbilities: {
       accuracy: attributes.accuracy,
       communication: attributes.communication,
@@ -99,12 +117,12 @@ export function loadLegacyCharacterDetails(attributes: LegacyAttributes) {
     armor: attributes.armor,
     weaponGroups: attributes["weapon-groups"],
   };
-  console.log({ LegacyRawAttributes: attributes, LegacyInfo: legacyInfo });
+  log({ LegacyRawAttributes: attributes, LegacyInfo: legacyInfo });
 }
 
 export function loadLegacyGroupings(attributes: LegacyAttributes) {
   if (!attributes) return;
-  console.log({ LegacyGroupings: groupRepeating(attributes) });
+  log({ LegacyGroupings: groupRepeating(attributes) });
 }
 
 /* -------------------------------------------------------------------------- */
@@ -178,11 +196,17 @@ export function importLegacyCharacterFlat(attributes: LegacyAttributes) {
   // (the already-computed total) would double-count Dexterity. Default to the
   // AGE base of 10 when absent, so Speed isn't just the Dexterity value.
   const baseSpeed = toInt(attributes["base-speed"]);
-  char.speed = baseSpeed != null ? baseSpeed : 10;
+  if (baseSpeed != null) {
+    char.speed = baseSpeed;
+  } else if (!char.speed) {
+    // Only default to the AGE base of 10 when Speed is unset, so an append
+    // import doesn't clobber an existing value the user already has.
+    char.speed = 10;
+  }
 
   // XP lives on the structured character section and is optional (may be null).
   // It is not derived from level — the real value is used when present.
-  const xp = attributes.character?.character?.xp;
+  const xp = toInt(attributes.character?.character?.xp);
   if (xp != null) char.xp = xp;
 
   // Legacy stores weapon groups as a comma string (sometimes with a trailing
@@ -285,7 +309,10 @@ export const legacyCurrency = (money: Array<Record<string, any>>) => {
     if (letters.startsWith("g")) key = "gold";
     else if (letters.startsWith("s")) key = "silver";
     else if (letters.startsWith("c")) key = "copper";
-    if (key) inventory.cash[key] = amount;
+    // Accumulate: legacy sheets often have several rows of the same
+    // denomination, and append mode should add to existing cash, not replace it.
+    // Overwrite mode resets denominations first via clearSection("currency").
+    if (key) inventory.cash[key] = (inventory.cash[key] || 0) + amount;
   });
 };
 
@@ -382,8 +409,10 @@ export const legacyAttackWeapons = (attacks: Array<Record<string, any>>) => {
   const inventory = useInventoryStore();
   attacks.forEach((atk) => {
     if (!atk["attack-name"]) return;
-    const ranged = !!atk.range;
     const { shortRange, longRange } = parseRange(atk.range);
+    // Legacy rows use placeholder ranges like "0" or "-" for melee weapons;
+    // both are truthy strings, so classify from the parsed short range instead.
+    const ranged = shortRange != null && shortRange > 0;
     inventory.addItem({
       name: atk["attack-name"],
       description: "",
@@ -500,6 +529,7 @@ function diffStates(
 }
 
 function logImportReport(report: ImportReport) {
+  if (!logMode) return report;
   const { overwritten, added, cleared } = report;
   console.groupCollapsed(
     `📋 Legacy Import Report — ${overwritten.length} overwritten, ${added.length} added, ${cleared.length} cleared`
@@ -606,8 +636,10 @@ function clearSection(key: ImportSectionKey) {
       bio.profession = "";
       bio.background = "";
       bio.socialClass = "";
+      // Legacy `gender` is imported into bio.sex only (see importLegacyBioFlat),
+      // so bio.gender is left alone here — clearing it would delete a user value
+      // that the import never rewrites.
       bio.sex = "";
-      bio.gender = "";
       bio.height = "";
       bio.weight = "";
       bio.eyes = "";
@@ -621,7 +653,10 @@ function clearSection(key: ImportSectionKey) {
       break;
     }
     case "settings":
-      // Re-applying settings is sufficient; nothing to clear.
+      // gameSystem and incomeMode are always re-applied by importLegacySettingsFlat,
+      // but showArcana is only ever turned on there, so it must be reset here or a
+      // non-caster legacy character would leave the Arcana section visible.
+      useSettingsStore().showArcana = false;
       break;
     case "talents":
       removeQualitiesByType(["Talent", "Special Feature"]);
@@ -704,7 +739,7 @@ export function importLegacyCharacter(
   // Guard: never clear/overwrite the sheet when there's no legacy data to
   // import (e.g. the character blob hasn't loaded yet).
   if (!attributes || !isLegacyData(attributes)) {
-    console.warn(
+    logWarn(
       "⚠️ Legacy import skipped: no legacy character data found in the blob."
     );
     return;
@@ -714,13 +749,17 @@ export function importLegacyCharacter(
   ) as ImportSectionKey[];
 
   const sheet = useAgeSheetStore();
-  const before = sheet.dehydrateStore();
+  // The before/after snapshots and diff only feed the dev-only import report,
+  // so skip that work entirely unless logging is on.
+  const before = logMode ? sheet.dehydrateStore() : null;
   const grouped = groupRepeating(attributes);
 
   if (mode === "overwrite") selected.forEach((key) => clearSection(key));
   selected.forEach((key) => applySection(key, attributes, grouped, name));
 
-  const after = sheet.dehydrateStore();
-  logImportReport(diffStates(before, after));
-  console.info("✅ Legacy import complete");
+  if (logMode) {
+    const after = sheet.dehydrateStore();
+    logImportReport(diffStates(before, after));
+  }
+  logInfo("✅ Legacy import complete");
 }
